@@ -1,0 +1,9 @@
+.idea
+Library
+obj
+Temp
+Assembly-CSharp-Editor.csproj
+Assembly-CSharp.csproj
+EasyBuildSystem.sln
+NavMeshComponents.csproj
+NavMeshComponentsEditor.csproj
