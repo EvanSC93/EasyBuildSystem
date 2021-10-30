@@ -72,20 +72,6 @@ public class PieceBehaviour : MonoBehaviour
         transform.rotation = m_InitRot;
     }
 
-    private void OnDrawGizmosSelected()
-    {
-        if (!ShowGizmos) return;
-
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireCube(transform.position, Vector3.one * 0.1f);
-        Gizmos.color = Color.cyan / 2;
-        Gizmos.DrawCube(transform.position, Vector3.one * 0.1f);
-
-        Gizmos.matrix = transform.localToWorldMatrix;
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireCube(m_MeshBounds.center, m_MeshBounds.size * 1.001f);
-    }
-
     /// <summary>
     /// This method allows to change the piece state (Queue, Preview, Edit, Remove, Placed).
     /// </summary>
