@@ -3,6 +3,4 @@ public enum BuildModeType
 {
     None,
     Placement,
-    Destruction,
-    Edition
 }

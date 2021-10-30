@@ -25,6 +25,9 @@ public class PieceBehaviour : MonoBehaviour
     private List<Renderer> m_Renderers;
     private List<Collider> m_Colliders;
     private Dictionary<Renderer, Material[]> m_InitialRenderers = new Dictionary<Renderer, Material[]>();
+
+    private Vector3 m_InitPos;
+    private Quaternion m_InitRot;
     
     public Vector3 RotationAxis => m_RotationAxis;
     public Vector3 PreviewOffset => m_PreviewOffset;
@@ -80,6 +83,18 @@ public class PieceBehaviour : MonoBehaviour
         }
     }
 
+    private void InitPosRot()
+    {
+        m_InitPos = transform.position;
+        m_InitRot = transform.rotation;
+    }
+
+    public void ResetPosRot()
+    {
+        transform.position = m_InitPos;
+        transform.rotation = m_InitRot;
+    }
+    
     private void Update()
     {
 
@@ -135,6 +150,7 @@ public class PieceBehaviour : MonoBehaviour
         }
         else if (state == StateType.Preview)
         {
+            InitPosRot();
             gameObject.ChangeAllMaterialsInChildren(m_Renderers.ToArray(), m_PreviewMaterial);
             gameObject.ChangeAllMaterialsColorInChildren(m_Renderers.ToArray(),
                 BuildBehaviour.instance.AllowPlacement ? m_PreviewAllowedColor : m_PreviewDeniedColor);
