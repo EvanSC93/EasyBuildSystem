@@ -10,11 +10,6 @@ public class PieceBehaviour : MonoBehaviour
     [SerializeField] private int m_ID;
     
     [SerializeField] private StateType m_CurrentState = StateType.Placed;
-    
-    [SerializeField] private bool m_RotateAccordingSlope;
-    [SerializeField] private bool m_PreviewUseColorLerpTime = false;
-    
-    [SerializeField] private float m_PreviewColorLerpTime = 15f;
 
     [SerializeField] private Vector3 m_RotationAxis = Vector3.up * 90;
     [SerializeField] private Vector3 m_PreviewOffset = new Vector3(0, 0, 0);
@@ -31,9 +26,6 @@ public class PieceBehaviour : MonoBehaviour
     private List<Collider> m_Colliders;
     private Dictionary<Renderer, Material[]> m_InitialRenderers = new Dictionary<Renderer, Material[]>();
     
-    public bool RotateAccordingSlope => m_RotateAccordingSlope;
-    public bool PreviewUseColorLerpTime => m_PreviewUseColorLerpTime;
-    public float PreviewColorLerpTime => m_PreviewColorLerpTime;
     public Vector3 RotationAxis => m_RotationAxis;
     public Vector3 PreviewOffset => m_PreviewOffset;
     public Color PreviewAllowedColor => m_PreviewAllowedColor;

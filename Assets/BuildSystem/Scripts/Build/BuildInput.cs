@@ -158,7 +158,7 @@ public class BuildInput : MonoBehaviour
 
     public void Rotate()
     {
-        BuildBehaviour.instance.RotatePreview(BuildBehaviour.instance.SelectedPrefab.RotationAxis);
+        BuildBehaviour.instance.RotatePreview(new Vector3(0, 90, 0));
         BuildBehaviour.instance.UpdateRotation();
     }
 

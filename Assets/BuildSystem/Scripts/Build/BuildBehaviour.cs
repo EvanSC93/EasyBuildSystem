@@ -31,9 +31,6 @@ public class BuildBehaviour : MonoBehaviour
     private Vector3 m_LastPoint;
 
     public BuildModeType CurrentModeType => m_CurrentModeType;
-    public BuildModeType LastModeType => m_LastModeType;
-
-    public PieceBehaviour SelectedPrefab => m_SelectedPrefab;
 
     public virtual Ray GetRay => m_Camera.ScreenPointToRay(Input.mousePosition);
 
@@ -73,9 +70,7 @@ public class BuildBehaviour : MonoBehaviour
         UpdateFreeMovement();
 
         m_CurrentPreview.gameObject.ChangeAllMaterialsColorInChildren(m_CurrentPreview.Renderers.ToArray(),
-            CheckPlacementConditions() ? m_CurrentPreview.PreviewAllowedColor : m_CurrentPreview.PreviewDeniedColor,
-            m_SelectedPrefab.PreviewColorLerpTime,
-            m_SelectedPrefab.PreviewUseColorLerpTime);
+            CheckPlacementConditions() ? m_CurrentPreview.PreviewAllowedColor : m_CurrentPreview.PreviewDeniedColor);
     }
 
     /// <summary>
@@ -158,35 +153,7 @@ public class BuildBehaviour : MonoBehaviour
             else
                 m_CurrentPreview.transform.position = nextPoint;
 
-            if (!m_CurrentPreview.RotateAccordingSlope)
-            {
-                m_CurrentPreview.transform.rotation = Quaternion.Euler(m_CurrentRotationOffset);
-            }
-            else
-            {
-                if (hit.collider is TerrainCollider)
-                {
-                    float SampleHeight = hit.collider.GetComponent<Terrain>().SampleHeight(hit.point);
-
-                    if (hit.point.y - .1f < SampleHeight)
-                    {
-                        m_CurrentPreview.transform.rotation = Quaternion.FromToRotation(m_CameraTrans.up, hit.normal) *
-                                                              Quaternion.Euler(m_CurrentRotationOffset) *
-                                                              m_CameraTrans.rotation *
-                                                              m_SelectedPrefab.transform.localRotation *
-                                                              Quaternion.Euler(m_CurrentRotationOffset);
-                    }
-                    else
-                    {
-                        m_CurrentPreview.transform.rotation = m_CameraTrans.rotation * m_SelectedPrefab.transform.localRotation * Quaternion.Euler(m_CurrentRotationOffset);
-                    }
-                }
-                else
-                {
-                    m_CurrentPreview.transform.rotation = Quaternion.FromToRotation(m_CameraTrans.up, hit.normal) * Quaternion.Euler(m_CurrentRotationOffset) *
-                                                          m_CameraTrans.rotation * m_SelectedPrefab.transform.localRotation * Quaternion.Euler(m_CurrentRotationOffset);
-                }
-            }
+            m_CurrentPreview.transform.rotation = Quaternion.Euler(m_CurrentRotationOffset);
 
             m_LastPoint = new Vector3(0, 1000f, 0);
             return;
@@ -225,18 +192,11 @@ public class BuildBehaviour : MonoBehaviour
             Destroy(m_CurrentEditionPreview.gameObject);
         }
 
-        BuildManager.instance.PlacePrefab(m_SelectedPrefab,
-            m_CurrentPreview.transform.position,
-            m_CurrentPreview.transform.eulerAngles,
-            m_CurrentPreview.transform.localScale);
-
+        m_CurrentPreview.ChangeState(StateType.Placed);
+        BuildEvent.instance.OnPieceInstantiated.Invoke(m_CurrentPreview);
+        m_CurrentPreview = null;
         m_CurrentRotationOffset = Vector3.zero;
         m_AllowPlacement = false;
-
-        if (m_CurrentPreview != null)
-        {
-            Destroy(m_CurrentPreview.gameObject);
-        }
     }
 
     /// <summary>
@@ -259,8 +219,6 @@ public class BuildBehaviour : MonoBehaviour
             m_AllowPlacement = CheckPlacementConditions(true);
 
             m_CurrentPreview.ChangeState(StateType.Preview);
-
-            m_SelectedPrefab = prefab.GetComponent<PieceBehaviour>();
 
             m_CurrentPreview.SetRendersEnable(enableRender);
             

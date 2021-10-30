@@ -5,7 +5,7 @@ using UnityEngine;
     {
         #region Methods
 
-        public static void ChangeAllMaterialsColorInChildren(this GameObject go, Renderer[] renderers, Color color, float lerpTime = 15.0f, bool lerp = false)
+        public static void ChangeAllMaterialsColorInChildren(this GameObject go, Renderer[] renderers, Color color)
         {
             Renderer[] Renderers = go.GetComponentsInChildren<Renderer>();
 
@@ -15,15 +15,7 @@ using UnityEngine;
                 {
                     for (int x = 0; x < Renderers[i].materials.Length; x++)
                     {
-                        if (lerp)
-                        {
-                            Color temp = Renderers[i].materials[x].GetColor("_BaseColor");
-                            Renderers[i].materials[x].SetColor("_BaseColor", Color.Lerp(temp, color, lerpTime * Time.deltaTime));
-                        }
-                        else
-                        {
-                            Renderers[i].materials[x].SetColor("_BaseColor", color);
-                        }
+                        Renderers[i].materials[x].SetColor("_BaseColor", color);
                     }
                 }
             }
