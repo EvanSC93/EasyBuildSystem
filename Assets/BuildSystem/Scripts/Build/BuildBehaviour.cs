@@ -30,16 +30,16 @@ public class BuildBehaviour : MonoBehaviour
     private Transform m_CameraTrans;
     private Vector3 m_LastAllowedPoint;
     private Vector3 m_LastPoint;
-    public virtual Ray GetRay => m_Camera.ScreenPointToRay(Input.mousePosition);
-    public float DetectionDistance => m_DetectionDistance;
+    
+    public Ray GetRay => m_Camera.ScreenPointToRay(Input.mousePosition);
     public bool AllowPlacement => m_AllowPlacement;
 
-    public virtual void Awake()
+    private void Awake()
     {
         instance = this;
     }
 
-    public virtual void Start()
+    private void Start()
     {
         m_Camera = Camera.main;
         m_CameraTrans = m_Camera.gameObject.transform;
@@ -199,7 +199,7 @@ public class BuildBehaviour : MonoBehaviour
         return Results.Count > 0;
     }
 
-    public virtual void PlacePrefab()
+    public void PlacePrefab()
     {
         m_CurrentPreview.ChangeState(StateType.Placed);
         m_CurrentPreview = null;
@@ -250,7 +250,7 @@ public class BuildBehaviour : MonoBehaviour
     /// <summary>
     /// This method allows to update all the builder (Placement, Destruction, Edition).
     /// </summary>
-    public virtual void UpdateModes()
+    private void UpdateModes()
     {
         if (m_CurrentModeType == BuildModeType.Placement)
         {

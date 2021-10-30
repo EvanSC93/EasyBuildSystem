@@ -9,7 +9,7 @@ public class PieceBehaviour : MonoBehaviour
 
     [SerializeField] private int m_ID;
     
-    [SerializeField] private StateType m_CurrentState = StateType.Placed;
+    [SerializeField] private StateType m_CurrentState;
     
     [SerializeField] private Vector3 m_PreviewOffset = new Vector3(0, 0, 0);
 
@@ -27,6 +27,7 @@ public class PieceBehaviour : MonoBehaviour
 
     private Vector3 m_InitPos;
     private Quaternion m_InitRot;
+    
     public Vector3 PreviewOffset => m_PreviewOffset;
     public Color PreviewAllowedColor => m_PreviewAllowedColor;
     public Color PreviewDeniedColor => m_PreviewDeniedColor;
