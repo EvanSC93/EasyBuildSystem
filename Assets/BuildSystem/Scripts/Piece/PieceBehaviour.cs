@@ -10,8 +10,7 @@ public class PieceBehaviour : MonoBehaviour
     [SerializeField] private int m_ID;
     
     [SerializeField] private StateType m_CurrentState = StateType.Placed;
-
-    [SerializeField] private Vector3 m_RotationAxis = Vector3.up * 90;
+    
     [SerializeField] private Vector3 m_PreviewOffset = new Vector3(0, 0, 0);
 
     [SerializeField] private Material m_DefaultPreviewMaterial;
@@ -21,15 +20,13 @@ public class PieceBehaviour : MonoBehaviour
     private Bounds m_MeshBounds;
     private Material m_PreviewMaterial;
     
-    private List<ConditionBehaviour> m_Conditions = new List<ConditionBehaviour>();
+    private ConditionBehaviour m_Conditions;
     private List<Renderer> m_Renderers;
     private List<Collider> m_Colliders;
     private Dictionary<Renderer, Material[]> m_InitialRenderers = new Dictionary<Renderer, Material[]>();
 
     private Vector3 m_InitPos;
     private Quaternion m_InitRot;
-    
-    public Vector3 RotationAxis => m_RotationAxis;
     public Vector3 PreviewOffset => m_PreviewOffset;
     public Color PreviewAllowedColor => m_PreviewAllowedColor;
     public Color PreviewDeniedColor => m_PreviewDeniedColor;
@@ -38,13 +35,10 @@ public class PieceBehaviour : MonoBehaviour
     public Bounds MeshBoundsToWorld => transform.ConvertBoundsToWorld(m_MeshBounds);
     public int ID => m_ID;
     public StateType CurrentState => m_CurrentState;
-    public StateType LastState { get; set; }
-
-    #region Methods
 
     private void Awake()
     {
-        m_Conditions.AddRange(GetComponents<ConditionBehaviour>());
+        m_Conditions = GetComponent<ConditionBehaviour>();
 
         m_Renderers = GetComponentsInChildren<Renderer>(true).ToList();
 
@@ -65,24 +59,6 @@ public class PieceBehaviour : MonoBehaviour
         m_MeshBounds = gameObject.GetChildsBounds();
     }
 
-    private void Start()
-    {
-        if (m_CurrentState != StateType.Preview)
-        {
-            BuildManager.instance.AddPiece(this);
-        }
-    }
-
-    private void Reset()
-    {
-        Debug.LogError("Reset");
-        if (m_MeshBounds.size == Vector3.zero)
-        {
-            
-     
-        }
-    }
-
     private void InitPosRot()
     {
         m_InitPos = transform.position;
@@ -93,21 +69,6 @@ public class PieceBehaviour : MonoBehaviour
     {
         transform.position = m_InitPos;
         transform.rotation = m_InitRot;
-    }
-    
-    private void Update()
-    {
-
-    }
-
-    private void OnDestroy()
-    {
-        if (m_CurrentState == StateType.Preview)
-        {
-            return;
-        }
-
-        BuildManager.instance.RemovePiece(this);
     }
 
     private void OnDrawGizmosSelected()
@@ -139,48 +100,25 @@ public class PieceBehaviour : MonoBehaviour
             return;
         }
 
-        LastState = m_CurrentState;
-
-        if (state == StateType.Queue)
-        {
-            gameObject.ChangeAllMaterialsInChildren(m_Renderers.ToArray(), m_PreviewMaterial);
-            gameObject.ChangeAllMaterialsColorInChildren(m_Renderers.ToArray(), Color.clear);
-
-            EnableAllColliders();
-        }
-        else if (state == StateType.Preview)
+        if (state == StateType.Preview)
         {
             InitPosRot();
+            
             gameObject.ChangeAllMaterialsInChildren(m_Renderers.ToArray(), m_PreviewMaterial);
             gameObject.ChangeAllMaterialsColorInChildren(m_Renderers.ToArray(),
                 BuildBehaviour.instance.AllowPlacement ? m_PreviewAllowedColor : m_PreviewDeniedColor);
 
-            DisableAllColliders();
-        }
-        else if (state == StateType.Edit)
-        {
-            // gameObject.ChangeAllMaterialsInChildren(m_Renderers.ToArray(), m_PreviewMaterial);
-            // gameObject.ChangeAllMaterialsColorInChildren(m_Renderers.ToArray(),
-            //     BuildBehaviour.instance.AllowEdition ? m_PreviewAllowedColor : m_PreviewDeniedColor);
+            EnableAllColliders(false);
             
-            SetRendersEnable(false);
-            
-            EnableAllColliders();
-        }
-        else if (state == StateType.Remove)
-        {
-            gameObject.ChangeAllMaterialsInChildren(m_Renderers.ToArray(), m_PreviewMaterial);
-            gameObject.ChangeAllMaterialsColorInChildren(m_Renderers.ToArray(), m_PreviewDeniedColor);
-
-            EnableAllColliders();
+            BuildManager.instance.RemovePiece(this);
         }
         else if (state == StateType.Placed)
         {
             gameObject.ChangeAllMaterialsInChildren(m_Renderers.ToArray(), m_InitialRenderers);
 
-            SetRendersEnable(true);
+            EnableAllColliders(true);
             
-            EnableAllColliders();
+            BuildManager.instance.AddPiece(this);
         }
 
         m_CurrentState = state;
@@ -188,105 +126,27 @@ public class PieceBehaviour : MonoBehaviour
         BuildEvent.instance.OnPieceChangedState.Invoke(this, state);
     }
 
-    public void SetRendersEnable(bool value)
-    {
-        foreach (var VARIABLE in m_Renderers)
-        {
-            VARIABLE.enabled = value;
-        }
-    }
-
     /// <summary>
     /// This method allows to enable all the colliders of this piece.
     /// </summary>
-    public void EnableAllColliders()
+    public void EnableAllColliders(bool value)
     {
         for (int i = 0; i < m_Colliders.Count; i++)
         {
-            m_Colliders[i].enabled = true;
-        }
-    }
-
-    /// <summary>
-    /// This method allows to disable all the colliders of this piece.
-    /// </summary>
-    public void DisableAllColliders()
-    {
-        for (int i = 0; i < m_Colliders.Count; i++)
-        {
-            m_Colliders[i].enabled = false;
-        }
-    }
-
-    /// <summary>
-    /// This method allows to enable all the colliders of this piece.
-    /// </summary>
-    public void EnableAllCollidersTrigger()
-    {
-        for (int i = 0; i < m_Colliders.Count; i++)
-        {
-            m_Colliders[i].isTrigger = true;
-        }
-    }
-
-    /// <summary>
-    /// This method allows to disable all the colliders of this piece.
-    /// </summary>
-    public void DisableAllCollidersTrigger()
-    {
-        for (int i = 0; i < m_Colliders.Count; i++)
-        {
-            m_Colliders[i].isTrigger = false;
+            m_Colliders[i].enabled = value;
         }
     }
 
     /// <summary>
     /// This method allows check all the external condition(s) before placement.
     /// </summary>
-    public bool CheckExternalPlacementConditions(bool isCreat = false)
+    public bool CheckExternalPlacementConditions()
     {
-        for (int i = 0; i < m_Conditions.Count; i++)
+        if (!m_Conditions.CheckForPlacement())
         {
-            if (!m_Conditions[i].CheckForPlacement(isCreat))
-            {
-                return false;
-            }
+            return false;
         }
 
         return true;
     }
-
-    /// <summary>
-    /// This method allows check all the external condition(s) before destruction.
-    /// </summary>
-    public bool CheckExternalDestructionConditions()
-    {
-        for (int i = 0; i < m_Conditions.Count; i++)
-        {
-            if (!m_Conditions[i].CheckForDestruction())
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// This method allow check all the external condition(s) before edition.
-    /// </summary>
-    public bool CheckExternalEditionConditions()
-    {
-        for (int i = 0; i < m_Conditions.Count; i++)
-        {
-            if (!m_Conditions[i].CheckForEdition())
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    #endregion Methods
 }

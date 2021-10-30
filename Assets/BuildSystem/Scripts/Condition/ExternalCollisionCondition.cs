@@ -34,7 +34,7 @@ public class ExternalCollisionCondition : ConditionBehaviour
         Gizmos.DrawWireCube(Piece.MeshBounds.center, Piece.MeshBounds.size * CollisionClippingSnappingTolerance * 1.001f);
     }
 
-    public override bool CheckForPlacement(bool isCreat = false)
+    public override bool CheckForPlacement()
     {
         bool hasBuildableSurface = false;
         bool canBePlaced = true;
@@ -87,23 +87,20 @@ public class ExternalCollisionCondition : ConditionBehaviour
             }
         }
 
-        if (!isCreat)
+        if (canBePlaced && !CollisionIgnoreWhenSnap)
         {
-            if (canBePlaced && !CollisionIgnoreWhenSnap)
-            {
-                colliders = PhysicExtension.GetNeighborsTypeByBox<Collider>(Piece.MeshBoundsToWorld.center,
-                    Piece.MeshBoundsToWorld.extents * CollisionClippingSnappingTolerance,
-                    transform.rotation,
-                    CollisionLayer).Where(x => !x.isTrigger).ToArray();
+            colliders = PhysicExtension.GetNeighborsTypeByBox<Collider>(Piece.MeshBoundsToWorld.center,
+                Piece.MeshBoundsToWorld.extents * CollisionClippingSnappingTolerance,
+                transform.rotation,
+                CollisionLayer).Where(x => !x.isTrigger).ToArray();
 
-                for (int i = 0; i < colliders.Length; i++)
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                if (colliders[i] != null)
                 {
-                    if (colliders[i] != null)
+                    if (colliders[i].GetComponentInParent<PieceBehaviour>() != null)
                     {
-                        if (colliders[i].GetComponentInParent<PieceBehaviour>() != null)
-                        {
-                            canBePlaced = false;
-                        }
+                        canBePlaced = false;
                     }
                 }
             }

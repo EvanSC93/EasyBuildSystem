@@ -56,7 +56,7 @@ public class BuildBehaviour : MonoBehaviour
         {
             if (Input.GetMouseButtonDown(0))
             {
-                if (Physics.Raycast(GetRay, out RaycastHit hit, BuildBehaviour.instance.DetectionDistance, BuildManager.instance.BuildableLayer))
+                if (Physics.Raycast(GetRay, out RaycastHit hit, m_DetectionDistance, BuildManager.instance.BuildableLayer))
                 {
                     PieceBehaviour currentPiece = hit.collider.GetComponentInParent<PieceBehaviour>();
                     if (currentPiece != null)
@@ -72,11 +72,10 @@ public class BuildBehaviour : MonoBehaviour
             m_AllowPlacement = CheckPlacementConditions();
             m_CurrentPreview.gameObject.ChangeAllMaterialsColorInChildren(m_CurrentPreview.Renderers.ToArray(),
                 m_AllowPlacement ? m_CurrentPreview.PreviewAllowedColor : m_CurrentPreview.PreviewDeniedColor);
-            m_CurrentPreview.SetRendersEnable(true);
 
             if (Input.GetMouseButtonDown(0))
             {
-                if (Physics.Raycast(GetRay, out RaycastHit hit, BuildBehaviour.instance.DetectionDistance, BuildManager.instance.BuildableLayer))
+                if (Physics.Raycast(GetRay, out RaycastHit hit, m_DetectionDistance, BuildManager.instance.BuildableLayer))
                 {
                     PieceBehaviour currentPiece = hit.collider.GetComponentInParent<PieceBehaviour>();
                     if (currentPiece != null)
@@ -100,8 +99,7 @@ public class BuildBehaviour : MonoBehaviour
 
             if (Input.GetMouseButton(0) && !IsPointerOverUIElement())
             {
-                float distance = m_DetectionDistance;
-                Physics.Raycast(GetRay, out RaycastHit hit, distance, BuildManager.instance.BuildableLayer);
+                Physics.Raycast(GetRay, out RaycastHit hit, m_DetectionDistance, BuildManager.instance.GroundLayer);
                 if (hit.collider != null)
                 {
                     Vector3 targetPoint = hit.point + m_CurrentPreview.PreviewOffset;
@@ -144,7 +142,7 @@ public class BuildBehaviour : MonoBehaviour
         }
     }
     
-    public bool CheckPlacementConditions(bool isCreat = false)
+    public bool CheckPlacementConditions()
     {
         if (m_CurrentPreview == null)
         {
@@ -156,7 +154,7 @@ public class BuildBehaviour : MonoBehaviour
             return false;
         }
 
-        if (!m_CurrentPreview.CheckExternalPlacementConditions(isCreat))
+        if (!m_CurrentPreview.CheckExternalPlacementConditions())
         {
             return false;
         }
@@ -226,8 +224,8 @@ public class BuildBehaviour : MonoBehaviour
 
             m_CurrentPreview = Instantiate(prefab).GetComponent<PieceBehaviour>();
             m_CurrentPreview.transform.eulerAngles = Vector3.zero;
-
-            m_AllowPlacement = CheckPlacementConditions(true);
+            m_CurrentPreview.transform.position += m_CurrentPreview.PreviewOffset;
+            m_AllowPlacement = CheckPlacementConditions();
 
             m_CurrentPreview.ChangeState(StateType.Preview);
 

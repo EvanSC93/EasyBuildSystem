@@ -25,16 +25,17 @@ using UnityEngine;
         {
             for (int i = 0; i < renderers.Length; i++)
             {
-                if (renderers[i] != null)
+                Renderer temp = renderers[i];
+                if (temp != null)
                 {
-                    Material[] materials = new Material[renderers[i].sharedMaterials.Length];
+                    Material[] materials = new Material[temp.sharedMaterials.Length];
 
-                    for (int x = 0; x < renderers[i].sharedMaterials.Length; x++)
+                    for (int x = 0; x < temp.sharedMaterials.Length; x++)
                     {
                         materials[x] = material;
                     }
 
-                    renderers[i].sharedMaterials = materials;
+                    temp.sharedMaterials = materials;
                 }
             }
         }

@@ -1,8 +1,6 @@
 ﻿public enum StateType
 {
-    Queue,
+    None,
     Preview,
-    Remove,
-    Edit,
     Placed
 }

@@ -14,7 +14,7 @@ public class ConditionBehaviour : MonoBehaviour
         set { }
     }
 
-    public virtual bool CheckForPlacement(bool isCreat = false) { return true; }
+    public virtual bool CheckForPlacement() { return true; }
     public virtual bool CheckForDestruction() { return true; }
     public virtual bool CheckForEdition() { return true; }
 }

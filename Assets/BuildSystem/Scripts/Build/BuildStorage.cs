@@ -7,10 +7,7 @@ using UnityEngine;
 public class BuildStorage : MonoBehaviour
 {
     public static BuildStorage Instance;
-
-    [SerializeField] private StorageType m_StorageType;
     
-    [SerializeField] private bool m_AutoDefineInDataPath = true;
     [SerializeField] private bool m_AutoSave = false;
     [SerializeField] private bool m_LoadAndWaitEndFrame;
     [SerializeField] private bool m_SavePrefabs = true;
@@ -19,7 +16,7 @@ public class BuildStorage : MonoBehaviour
     [SerializeField] private float m_AutoSaveInterval = 60f;
     
     [SerializeField] private string m_StorageOutputFile;
-    
+
     private bool LoadedFile = false;
     private bool m_FileIsCorrupted;
     
@@ -29,6 +26,85 @@ public class BuildStorage : MonoBehaviour
     
     #region Methods
 
+    private void Awake()
+    {
+        Instance = this;
+    }
+
+    private void Start()
+    {
+        if (m_LoadPrefabs)
+        {
+            StartCoroutine(LoadDataFile());
+        }
+
+        if (m_AutoSave)
+        {
+            TimerAutoSave = m_AutoSaveInterval;
+        }
+    }
+
+    private void Update()
+    {
+        if (m_AutoSave)
+        {
+            if (TimerAutoSave <= 0)
+            {
+                //Debug.LogError("<b>Easy Build System</b> : Saving of " + FindObjectsOfType<PieceBehaviour>().Length + " Part(s) ...");
+
+                SaveStorageFile();
+
+                //Debug.LogError("<b>Easy Build System</b> : Saved with successfuly !");
+
+                TimerAutoSave = m_AutoSaveInterval;
+            }
+            else
+            {
+                TimerAutoSave -= Time.deltaTime;
+            }
+        }
+    }
+
+    private void OnApplicationPause(bool pause)
+    {
+        if (pause)
+        {
+            if (!m_SavePrefabs)
+            {
+                return;
+            }
+
+            SaveStorageFile();
+        }
+    }
+
+    private void OnApplicationQuit()
+    {
+        if (!m_SavePrefabs)
+        {
+            return;
+        }
+
+        SaveStorageFile();
+    }
+    
+    public string GetOutPutPath()
+    {
+        if (m_StorageOutputFile == "")
+        {
+            string path = Application.persistentDataPath + "/cache";
+            string fileName = "/data.dat";
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            m_StorageOutputFile = path + fileName;
+        }
+
+        return m_StorageOutputFile;
+    }
+    
     /// <summary>
     /// (Editor) This method allows to load a storage file in Editor scene.
     /// </summary>
@@ -69,7 +145,7 @@ public class BuildStorage : MonoBehaviour
 
         if (Serializer == null || Serializer.Pieces == null)
         {
-            Debug.Log("<b>Easy Build System</b> : The file is empty or the data are corrupted.");
+            Debug.LogError("<b>Easy Build System</b> : The file is empty or the data are corrupted.");
 
             return;
         }
@@ -97,14 +173,14 @@ public class BuildStorage : MonoBehaviour
                 }
                 else
                 {
-                    Debug.Log("<b>Easy Build System</b> : The Prefab (" + Serializer.Pieces[i].Id + ") does not exists in the Build Manager.");
+                    Debug.LogError("<b>Easy Build System</b> : The Prefab (" + Serializer.Pieces[i].Id + ") does not exists in the Build Manager.");
                 }
             }
         }
 
         Stream.Close();
 
-        Debug.Log("<b>Easy Build System</b> : Data file loaded " + PrefabLoaded + " Prefab(s) loaded in " + Time.realtimeSinceStartup.ToString("#.##") + " ms in the Editor scene.");
+        Debug.LogError("<b>Easy Build System</b> : Data file loaded " + PrefabLoaded + " Prefab(s) loaded in " + Time.realtimeSinceStartup.ToString("#.##") + " ms in the Editor scene.");
 
         PrefabsLoaded.Clear();
     }
@@ -138,129 +214,39 @@ public class BuildStorage : MonoBehaviour
     /// </summary>
     public bool ExistsStorageFile()
     {
-        return File.Exists(m_StorageOutputFile);
-    }
-
-    private void Awake()
-    {
-        Instance = this;
-    }
-
-    private void Start()
-    {
-        if (m_AutoDefineInDataPath)
-        {
-            string path = Application.persistentDataPath + "/cache";
-            string fileName = "/data.dat";
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
-
-            m_StorageOutputFile = path + fileName;
-        }
-
-        if (m_LoadPrefabs)
-        {
-            StartCoroutine(LoadDataFile());
-        }
-
-        if (m_AutoSave)
-        {
-            TimerAutoSave = m_AutoSaveInterval;
-        }
-    }
-
-    private void Update()
-    {
-        if (m_AutoSave)
-        {
-            if (TimerAutoSave <= 0)
-            {
-                Debug.Log("<b>Easy Build System</b> : Saving of " + FindObjectsOfType<PieceBehaviour>().Length + " Part(s) ...");
-
-                SaveStorageFile();
-
-                Debug.Log("<b>Easy Build System</b> : Saved with successfuly !");
-
-                TimerAutoSave = m_AutoSaveInterval;
-            }
-            else
-            {
-                TimerAutoSave -= Time.deltaTime;
-            }
-        }
-    }
-
-    private void OnApplicationPause(bool pause)
-    {
-
-#if UNITY_EDITOR
-
-#else
-            if (m_StorageType == StorageType.Android)
-            {
-                if (!m_SavePrefabs)
-                {
-                    return;
-                }
-
-                SaveStorageFile();
-            }
-#endif
-    }
-
-    private void OnApplicationQuit()
-    {
-        if (!m_SavePrefabs)
-        {
-            return;
-        }
-
-        SaveStorageFile();
+        return File.Exists(GetOutPutPath());
     }
 
     private IEnumerator LoadDataFile()
     {
-        if (m_StorageType == StorageType.Desktop)
+        if (GetOutPutPath() == string.Empty || Directory.Exists(GetOutPutPath()))
         {
-            if (m_StorageOutputFile == string.Empty || Directory.Exists(m_StorageOutputFile))
-            {
-                Debug.LogError("<b>Easy Build System</b> : Please define output path.");
+            Debug.LogError("<b>Easy Build System</b> : Please define output path.");
 
-                yield break;
-            }
+            yield break;
         }
 
         int PrefabLoaded = 0;
 
         PrefabsLoaded = new List<PieceBehaviour>();
 
-        if (ExistsStorageFile() || m_StorageType == StorageType.Android)
+        bool result = ExistsStorageFile();
+
+        if (result)
         {
-            Debug.Log("<b>Easy Build System</b> : Loading data file ...");
+            //Debug.LogError("<b>Easy Build System</b> : Loading data file ...");
 
             FileStream Stream = null;
 
-            if (m_StorageType == StorageType.Desktop)
-            {
-                Stream = File.Open(m_StorageOutputFile, FileMode.Open);
-            }
+            Stream = File.Open(GetOutPutPath(), FileMode.Open);
 
             PieceData serializer = null;
 
             try
             {
-                if (m_StorageType == StorageType.Desktop)
+                using (StreamReader Reader = new StreamReader(Stream))
                 {
-                    using (StreamReader Reader = new StreamReader(Stream))
-                    {
-                        serializer = JsonUtility.FromJson<PieceData>(Reader.ReadToEnd());
-                    }
-                }
-                else
-                {
-                    serializer = JsonUtility.FromJson<PieceData>(PlayerPrefs.GetString("EBS_Storage"));
+                    serializer = JsonUtility.FromJson<PieceData>(Reader.ReadToEnd());
                 }
             }
             catch (Exception ex)
@@ -310,7 +296,7 @@ public class BuildStorage : MonoBehaviour
                     }
                     else
                     {
-                        Debug.Log("<b>Easy Build System</b> : The prefab (" + serializer.Pieces[i].Id + ") does not exists in the list of Build Manager.");
+                        Debug.LogError("<b>Easy Build System</b> : The prefab (" + serializer.Pieces[i].Id + ") does not exists in the list of Build Manager.");
                     }
                 }
             }
@@ -322,11 +308,11 @@ public class BuildStorage : MonoBehaviour
 
             if (!m_LoadAndWaitEndFrame)
             {
-                Debug.Log("<b>Easy Build System</b> : Data file loaded " + PrefabLoaded + " prefab(s) loaded in " + Time.realtimeSinceStartup.ToString("#.##") + " ms.");
+                //Debug.LogError("<b>Easy Build System</b> : Data file loaded " + PrefabLoaded + " prefab(s) loaded in " + Time.realtimeSinceStartup.ToString("#.##") + " ms.");
             }
             else
             {
-                Debug.Log("<b>Easy Build System</b> : Data file loaded " + PrefabLoaded + " prefab(s).");
+                //Debug.LogError("<b>Easy Build System</b> : Data file loaded " + PrefabLoaded + " prefab(s).");
             }
 
             LoadedFile = true;
@@ -337,6 +323,7 @@ public class BuildStorage : MonoBehaviour
         }
         else
         {
+            //Debug.LogError("<b>Easy Build System</b> : No file");
             BuildEvent.instance.OnStorageLoadingResult.Invoke(null);
         }
 
@@ -347,12 +334,12 @@ public class BuildStorage : MonoBehaviour
     {
         if (m_FileIsCorrupted)
         {
-            Debug.LogWarning("<b>Easy Build System</b> : The file is corrupted, the Prefabs could not be saved.");
+            Debug.LogError("<b>Easy Build System</b> : The file is corrupted, the Prefabs could not be saved.");
 
             yield break;
         }
 
-        if (m_StorageOutputFile == string.Empty || Directory.Exists(m_StorageOutputFile))
+        if (GetOutPutPath() == string.Empty || Directory.Exists(GetOutPutPath()))
         {
             Debug.LogError("<b>Easy Build System</b> : Please define out file path.");
 
@@ -363,7 +350,7 @@ public class BuildStorage : MonoBehaviour
 
         if (ExistsStorageFile())
         {
-            File.Delete(m_StorageOutputFile);
+            File.Delete(GetOutPutPath());
         }
         else
         {
@@ -372,14 +359,11 @@ public class BuildStorage : MonoBehaviour
 
         if (BuildManager.instance.CachedParts.Count > 0)
         {
-            Debug.Log("<b>Easy Build System</b> : Saving data file ...");
+            //Debug.LogError("<b>Easy Build System</b> : Saving data file ...");
 
             FileStream Stream = null;
 
-            if (m_StorageType == StorageType.Desktop)
-            {
-                Stream = File.Create(m_StorageOutputFile);
-            }
+            Stream = File.Create(GetOutPutPath());
 
             PieceData Data = new PieceData();
 
@@ -389,7 +373,7 @@ public class BuildStorage : MonoBehaviour
             {
                 if (PartsAtSave[i] != null)
                 {
-                    if (PartsAtSave[i].CurrentState == StateType.Placed || PartsAtSave[i].CurrentState == StateType.Remove)
+                    if (PartsAtSave[i].CurrentState == StateType.Placed)
                     {
                         PieceData.SerializedPiece DataTemp = new PieceData.SerializedPiece
                         {
@@ -407,23 +391,14 @@ public class BuildStorage : MonoBehaviour
                 }
             }
 
-            if (m_StorageType == StorageType.Desktop)
+            using (StreamWriter Writer = new StreamWriter(Stream))
             {
-                using (StreamWriter Writer = new StreamWriter(Stream))
-                {
-                    Writer.Write(JsonUtility.ToJson(Data));
-                }
-
-                Stream.Close();
-            }
-            else
-            {
-                PlayerPrefs.SetString("EBS_Storage", JsonUtility.ToJson(Data));
-
-                PlayerPrefs.Save();
+                Writer.Write(JsonUtility.ToJson(Data));
             }
 
-            Debug.Log("<b>Easy Build System</b> : Data file saved " + SavedCount + " Prefab(s).");
+            Stream.Close();
+
+            //Debug.LogError("<b>Easy Build System</b> : Data file saved " + SavedCount + " Prefab(s).");
 
             if (BuildEvent.instance != null)
             {
@@ -436,23 +411,23 @@ public class BuildStorage : MonoBehaviour
 
     private IEnumerator DeleteDataFile()
     {
-        if (m_StorageOutputFile == string.Empty || Directory.Exists(m_StorageOutputFile))
+        if (GetOutPutPath() == string.Empty || Directory.Exists(GetOutPutPath()))
         {
             Debug.LogError("<b>Easy Build System</b> : Please define out file path.");
 
             yield break;
         }
 
-        if (File.Exists(m_StorageOutputFile) == true)
+        if (File.Exists(GetOutPutPath()) == true)
         {
             for (int i = 0; i < PrefabsLoaded.Count; i++)
             {
                 Destroy(PrefabsLoaded[i].gameObject);
             }
 
-            File.Delete(m_StorageOutputFile);
+            File.Delete(GetOutPutPath());
 
-            Debug.Log("<b>Easy Build System</b> : The storage file has been removed.");
+            Debug.LogError("<b>Easy Build System</b> : The storage file has been removed.");
         }
         else
         {

@@ -93,7 +93,7 @@ public static class MathExtension
         {
             position -= Vector3.one * gridOffset;
             position /= gridSize;
-            position = new Vector3(Mathf.Round(position.x), Mathf.Round(position.y), Mathf.Round(position.z));
+            position = new Vector3(Mathf.Round(position.x), position.y, Mathf.Round(position.z));
             position *= gridSize;
             position += Vector3.one * gridOffset;
             return position;
