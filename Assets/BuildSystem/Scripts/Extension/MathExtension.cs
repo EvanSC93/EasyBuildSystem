@@ -6,34 +6,34 @@ public static class MathExtension
 
         public static Bounds GetChildsBounds(this GameObject target)
         {
-            MeshRenderer[] Renders = target.GetComponentsInChildren<MeshRenderer>();
+            MeshRenderer[] renders = target.GetComponentsInChildren<MeshRenderer>();
 
-            Quaternion CurrentRotation = target.transform.rotation;
+            Quaternion currentRotation = target.transform.rotation;
 
-            Vector3 CurrentScale = target.transform.localScale;
+            Vector3 currentScale = target.transform.localScale;
 
             target.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
 
             target.transform.localScale = Vector3.one;
 
-            Bounds ResultBounds = new Bounds(target.transform.position, Vector3.zero);
+            Bounds resultBounds = new Bounds(target.transform.position, Vector3.zero);
 
-            foreach (Renderer Render in Renders)
+            foreach (Renderer item in renders)
             {
-                ResultBounds.Encapsulate(Render.bounds);
+                resultBounds.Encapsulate(item.bounds);
             }
 
-            Vector3 RelativeCenter = ResultBounds.center - target.transform.position;
+            Vector3 relativeCenter = resultBounds.center - target.transform.position;
 
-            ResultBounds.center = RelativeCenter;
+            resultBounds.center = relativeCenter;
 
-            ResultBounds.size = ResultBounds.size;
+            resultBounds.size = resultBounds.size;
 
-            target.transform.rotation = CurrentRotation;
+            target.transform.rotation = currentRotation;
 
-            target.transform.localScale = CurrentScale;
+            target.transform.localScale = currentScale;
 
-            return ResultBounds;
+            return resultBounds;
         }
 
         public static Bounds GetParentBounds(this GameObject target)
@@ -70,18 +70,9 @@ public static class MathExtension
 
         public static Bounds ConvertBoundsToWorld(this Transform transform, Bounds localBounds)
         {
-            if (transform != null)
-            {
-                return new Bounds(transform.TransformPoint(localBounds.center), new Vector3(localBounds.size.x * transform.localScale.x,
-                    localBounds.size.y * transform.localScale.y,
-                    localBounds.size.z * transform.localScale.z));
-            }
-            else
-            {
-                return new Bounds(localBounds.center, new Vector3(localBounds.size.x * transform.localScale.x,
-                    localBounds.size.y * transform.localScale.y,
-                    localBounds.size.z * transform.localScale.z));
-            }
+            return new Bounds(transform.TransformPoint(localBounds.center), new Vector3(localBounds.size.x * transform.localScale.x,
+                localBounds.size.y * transform.localScale.y,
+                localBounds.size.z * transform.localScale.z));
         }
 
         public static float ConvertToGrid(float gridSize, float gridOffset, float axis)
