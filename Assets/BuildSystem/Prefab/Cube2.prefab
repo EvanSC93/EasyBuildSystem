@@ -28,7 +28,7 @@ Transform:
   m_GameObject: {fileID: 2625579746282820257}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 3}
+  m_LocalScale: {x: 1, y: 1, z: 2}
   m_Children: []
   m_Father: {fileID: 4182358544659774718}
   m_RootOrder: 1
@@ -197,8 +197,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4346158957485600237}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 2, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 5110177898925708480}
@@ -206,7 +206,7 @@ Transform:
   - {fileID: 8477429743323123041}
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
 --- !u!114 &8327002050426682125
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -220,8 +220,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_ID: 2
+  m_PieceMoveType: 2
   m_CurrentState: 0
-  m_PreviewOffset: {x: 0, y: 0.5, z: 0}
+  m_PreviewOffset: 0.5
   m_DefaultPreviewMaterial: {fileID: 2100000, guid: 021be3d50e4569a468af004e463cfe04,
     type: 2}
   m_PreviewAllowedColor: {r: 0, g: 1, b: 0, a: 0.5}
@@ -241,10 +242,7 @@ MonoBehaviour:
   CollisionLayer:
     serializedVersion: 2
     m_Bits: 257
-  CollisionClippingTolerance: 0.9
   CollisionClippingSnappingTolerance: 0.99
-  RequireBuildableSurface: 0
-  CollisionIgnoreWhenSnap: 0
 --- !u!1 &7309165740179637398
 GameObject:
   m_ObjectHideFlags: 0
@@ -271,7 +269,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7309165740179637398}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.509, z: 1.35}
+  m_LocalPosition: {x: 0, y: 0.5, z: 1}
   m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
   m_Children: []
   m_Father: {fileID: 4182358544659774718}

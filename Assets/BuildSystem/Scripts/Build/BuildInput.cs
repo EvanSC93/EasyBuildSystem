@@ -67,7 +67,7 @@ public class BuildInput : MonoBehaviour
             {
                 return;
             }
-            BuildBehaviour.instance.PlacePrefab();
+            BuildBehaviour.instance.PlacePreview();
             BuildBehaviour.instance.ChangeMode(BuildModeType.None);
         }
         
@@ -78,7 +78,6 @@ public class BuildInput : MonoBehaviour
     {
         if (BuildBehaviour.instance.CurrentPreview != null)
         {
-            BuildBehaviour.instance.ClearPreview();
             BuildBehaviour.instance.ChangeMode(BuildModeType.None);
         }
         
@@ -91,13 +90,12 @@ public class BuildInput : MonoBehaviour
         {
             if (BuildBehaviour.instance.IsNew)
             {
-                BuildBehaviour.instance.ClearPreview();
                 BuildBehaviour.instance.ChangeMode(BuildModeType.None);
             }
             else
             {
                 BuildBehaviour.instance.ResetPreview();
-                BuildBehaviour.instance.PlacePrefab();
+                BuildBehaviour.instance.PlacePreview();
                 BuildBehaviour.instance.ChangeMode(BuildModeType.None);
             }
         }

@@ -73,37 +73,37 @@ using UnityEngine;
             return Types.ToArray();
         }
 
-        private static Collider[] BoxCache = new Collider[MAX_ALLOC_COUNT];
+        private static Collider[] m_BoxCache = new Collider[MAX_ALLOC_COUNT];
         public static T[] GetNeighborsTypeByBox<T>(Vector3 position, Vector3 size, Quaternion rotation, LayerMask layer, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
         {
             bool InitQueries = Physics.queriesHitTriggers;
 
             Physics.queriesHitTriggers = true;
 
-            BoxCache = new Collider[MAX_ALLOC_COUNT];
-            int ColliderCount = Physics.OverlapBoxNonAlloc(position, size, BoxCache, rotation, layer, query);
+            m_BoxCache = new Collider[MAX_ALLOC_COUNT];
+            int colliderCount = Physics.OverlapBoxNonAlloc(position, size, m_BoxCache, rotation, layer, query);
 
             Physics.queriesHitTriggers = InitQueries;
 
-            List<T> Types = new List<T>();
+            List<T> types = new List<T>();
 
-            for (int i = 0; i < ColliderCount; i++)
+            for (int i = 0; i < colliderCount; i++)
             {
-                T Type = BoxCache[i].GetComponentInParent<T>();
+                T temp = m_BoxCache[i].GetComponentInParent<T>();
 
-                if (Type != null)
+                if (temp != null)
                 {
-                    if (Type is T)
+                    if (temp is T)
                     {
-                        if (!Types.Contains(Type))
+                        if (!types.Contains(temp))
                         {
-                            Types.Add(Type);
+                            types.Add(temp);
                         }
                     }
                 }
             }
 
-            return Types.ToArray();
+            return types.ToArray();
         }
 
         #endregion

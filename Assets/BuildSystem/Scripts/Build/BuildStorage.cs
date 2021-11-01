@@ -22,7 +22,7 @@ public class BuildStorage : MonoBehaviour
     
     private float TimerAutoSave;
     
-    private List<PieceBehaviour> PrefabsLoaded = new List<PieceBehaviour>();
+    private List<PieceBehaviour> m_PrefabsLoaded = new List<PieceBehaviour>();
     
     #region Methods
 
@@ -112,7 +112,7 @@ public class BuildStorage : MonoBehaviour
     {
         int PrefabLoaded = 0;
 
-        PrefabsLoaded = new List<PieceBehaviour>();
+        m_PrefabsLoaded = new List<PieceBehaviour>();
 
         BuildManager Manager = FindObjectOfType<BuildManager>();
 
@@ -167,7 +167,7 @@ public class BuildStorage : MonoBehaviour
                     PlacedPrefab.transform.eulerAngles = PieceData.ParseToVector3(Serializer.Pieces[i].Rotation);
                     PlacedPrefab.transform.localScale = PieceData.ParseToVector3(Serializer.Pieces[i].Scale);
 
-                    PrefabsLoaded.Add(PlacedPrefab);
+                    m_PrefabsLoaded.Add(PlacedPrefab);
 
                     PrefabLoaded++;
                 }
@@ -182,7 +182,7 @@ public class BuildStorage : MonoBehaviour
 
         Debug.LogError("<b>Easy Build System</b> : Data file loaded " + PrefabLoaded + " Prefab(s) loaded in " + Time.realtimeSinceStartup.ToString("#.##") + " ms in the Editor scene.");
 
-        PrefabsLoaded.Clear();
+        m_PrefabsLoaded.Clear();
     }
 
     /// <summary>
@@ -226,9 +226,9 @@ public class BuildStorage : MonoBehaviour
             yield break;
         }
 
-        int PrefabLoaded = 0;
+        int prefabLoaded = 0;
 
-        PrefabsLoaded = new List<PieceBehaviour>();
+        m_PrefabsLoaded = new List<PieceBehaviour>();
 
         bool result = ExistsStorageFile();
 
@@ -271,23 +271,23 @@ public class BuildStorage : MonoBehaviour
             {
                 if (serializer.Pieces[i] != null)
                 {
-                    PieceBehaviour Prefab = BuildManager.instance.GetPieceById(serializer.Pieces[i].Id);
+                    PieceBehaviour temp = BuildManager.instance.GetPieceById(serializer.Pieces[i].Id);
 
-                    if (Prefab != null)
+                    if (temp != null)
                     {
-                        PieceBehaviour placedPrefab = BuildManager.instance.PlacePrefab(Prefab,
+                        PieceBehaviour placedPiece = BuildManager.instance.PlacePrefab(temp,
                             PieceData.ParseToVector3(serializer.Pieces[i].Position),
                             PieceData.ParseToVector3(serializer.Pieces[i].Rotation),
                             PieceData.ParseToVector3(serializer.Pieces[i].Scale));
 
-                        placedPrefab.name = serializer.Pieces[i].Name;
-                        placedPrefab.transform.position = PieceData.ParseToVector3(serializer.Pieces[i].Position);
-                        placedPrefab.transform.eulerAngles = PieceData.ParseToVector3(serializer.Pieces[i].Rotation);
-                        placedPrefab.transform.localScale = PieceData.ParseToVector3(serializer.Pieces[i].Scale);
+                        placedPiece.name = serializer.Pieces[i].Name;
+                        placedPiece.transform.position = PieceData.ParseToVector3(serializer.Pieces[i].Position);
+                        placedPiece.transform.eulerAngles = PieceData.ParseToVector3(serializer.Pieces[i].Rotation);
+                        placedPiece.transform.localScale = PieceData.ParseToVector3(serializer.Pieces[i].Scale);
 
-                        PrefabsLoaded.Add(placedPrefab);
+                        m_PrefabsLoaded.Add(placedPiece);
 
-                        PrefabLoaded++;
+                        prefabLoaded++;
 
                         if (m_LoadAndWaitEndFrame)
                         {
@@ -317,7 +317,7 @@ public class BuildStorage : MonoBehaviour
 
             LoadedFile = true;
 
-            BuildEvent.instance.OnStorageLoadingResult.Invoke(PrefabsLoaded.ToArray());
+            BuildEvent.instance.OnStorageLoadingResult.Invoke(m_PrefabsLoaded.ToArray());
 
             yield break;
         }
@@ -402,7 +402,7 @@ public class BuildStorage : MonoBehaviour
 
             if (BuildEvent.instance != null)
             {
-                BuildEvent.instance.OnStorageSavingResult.Invoke(PrefabsLoaded.ToArray());
+                BuildEvent.instance.OnStorageSavingResult.Invoke(m_PrefabsLoaded.ToArray());
             }
 
             yield break;
@@ -420,9 +420,9 @@ public class BuildStorage : MonoBehaviour
 
         if (File.Exists(GetOutPutPath()) == true)
         {
-            for (int i = 0; i < PrefabsLoaded.Count; i++)
+            for (int i = 0; i < m_PrefabsLoaded.Count; i++)
             {
-                Destroy(PrefabsLoaded[i].gameObject);
+                Destroy(m_PrefabsLoaded[i].gameObject);
             }
 
             File.Delete(GetOutPutPath());

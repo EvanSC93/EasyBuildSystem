@@ -2,19 +2,20 @@
 
 public class ConditionBehaviour : MonoBehaviour
 {
-    private PieceBehaviour _Piece;
-    public PieceBehaviour Piece
+    private PieceBehaviour m_Piece;
+
+    public PieceBehaviour GetSelfPiece()
     {
-        get
+        if (m_Piece == null)
         {
-            if (_Piece == null)
-                _Piece = GetComponent<PieceBehaviour>();
-            return _Piece;
+            m_Piece = GetComponent<PieceBehaviour>();
         }
-        set { }
+
+        return m_Piece;
     }
 
-    public virtual bool CheckForPlacement() { return true; }
-    public virtual bool CheckForDestruction() { return true; }
-    public virtual bool CheckForEdition() { return true; }
+    public virtual bool CheckForPlacement()
+    {
+        return true;
+    }
 }

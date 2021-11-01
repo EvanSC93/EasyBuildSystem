@@ -3,15 +3,22 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 
+public enum PieceMoveType
+{
+    None,
+    Ground,
+    Wall
+}
+
 public class PieceBehaviour : MonoBehaviour
 {
     public static bool ShowGizmos = true;
 
     [SerializeField] private int m_ID;
-    
+    [SerializeField] private PieceMoveType m_PieceMoveType;
     [SerializeField] private StateType m_CurrentState;
     
-    [SerializeField] private Vector3 m_PreviewOffset = new Vector3(0, 0, 0);
+    [SerializeField] private float m_PreviewOffset = 0.5f;
 
     [SerializeField] private Material m_DefaultPreviewMaterial;
     [SerializeField] private Color m_PreviewAllowedColor = new Color(0.0f, 1.0f, 0, 0.5f);
@@ -28,7 +35,7 @@ public class PieceBehaviour : MonoBehaviour
     private Vector3 m_InitPos;
     private Quaternion m_InitRot;
     
-    public Vector3 PreviewOffset => m_PreviewOffset;
+    public float PreviewOffset => m_PreviewOffset;
     public Color PreviewAllowedColor => m_PreviewAllowedColor;
     public Color PreviewDeniedColor => m_PreviewDeniedColor;
     public List<Renderer> Renderers => m_Renderers;
@@ -36,7 +43,8 @@ public class PieceBehaviour : MonoBehaviour
     public Bounds MeshBoundsToWorld => transform.ConvertBoundsToWorld(m_MeshBounds);
     public int ID => m_ID;
     public StateType CurrentState => m_CurrentState;
-
+    public PieceMoveType PieceMoveType => m_PieceMoveType;
+    
     private void Awake()
     {
         m_Conditions = GetComponent<ConditionBehaviour>();
@@ -104,7 +112,7 @@ public class PieceBehaviour : MonoBehaviour
             gameObject.ChangeAllMaterialsInChildren(m_Renderers.ToArray(), m_InitialRenderers);
 
             EnableAllColliders(true);
-            
+            gameObject.name += " - " + BuildManager.instance.CachedParts.Count;
             BuildManager.instance.AddPiece(this);
         }
 
@@ -129,11 +137,6 @@ public class PieceBehaviour : MonoBehaviour
     /// </summary>
     public bool CheckExternalPlacementConditions()
     {
-        if (!m_Conditions.CheckForPlacement())
-        {
-            return false;
-        }
-
-        return true;
+        return m_Conditions.CheckForPlacement();
     }
 }

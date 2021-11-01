@@ -7,6 +7,8 @@ public class BuildManager : MonoBehaviour
 
     [SerializeField] private LayerMask m_BuildableLayer = 1 << 0;
     [SerializeField] private LayerMask m_GroundLayer;
+    [SerializeField] private LayerMask m_WallLayer;
+    [SerializeField] private LayerMask m_FixationLayer;
     
     [SerializeField] private SupportType m_BuildableSurfaces = SupportType.SurfaceCollider;
     [SerializeField] private StateType DefaultState = StateType.Placed;
@@ -15,6 +17,8 @@ public class BuildManager : MonoBehaviour
 
     public LayerMask BuildableLayer => m_BuildableLayer;
     public LayerMask GroundLayer => m_GroundLayer;
+    public LayerMask WallLayer => m_WallLayer;
+    public LayerMask FixationLayer => m_FixationLayer;
     
     public List<PieceBehaviour> CachedParts => m_CachedParts;
     public List<PieceBehaviour> Pieces => m_Pieces;
