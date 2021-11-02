@@ -11,6 +11,7 @@ public class BuildBehaviour : MonoBehaviour
 
     [SerializeField] private BuildModeType m_CurrentModeType;
 
+    [SerializeField] private float m_Sensor = 50;
     [SerializeField] private float m_DetectionDistance = 10f;
     [SerializeField] private float m_PreviewGridSize = 1.0f;
     [SerializeField] private float m_PreviewGridOffset;
@@ -18,9 +19,15 @@ public class BuildBehaviour : MonoBehaviour
 
     [SerializeField] private PieceBehaviour m_CurrentPreview;
     [SerializeField] private FixationBehaviour m_FixationBehaviour;
-    
+
     [SerializeField] private bool m_AllowPlacement;
     [SerializeField] private bool m_IsNew;
+
+    [SerializeField] private bool m_CanMove;
+    [SerializeField] private Vector3 m_MoveInitPos;
+    [SerializeField] private Vector3 m_MoveMousePos;
+
+    [SerializeField] private MoveTargetBehaviour m_MoveTargetBehaviour;
 
     public PieceBehaviour CurrentPreview => m_CurrentPreview;
 
@@ -28,12 +35,11 @@ public class BuildBehaviour : MonoBehaviour
 
     private Camera m_Camera;
     private Transform m_CameraTrans;
-    
-    private Quaternion m_PieceQuaternion;
-    private Quaternion m_FixationQuaternion;
-    
+
     private Vector3 m_LastAllowedPoint;
     private Vector3 m_LastPoint;
+
+    private Quaternion m_CurrentPreviewRot;
 
     public Ray GetRay => m_Camera.ScreenPointToRay(Input.mousePosition);
     public bool AllowPlacement => m_AllowPlacement;
@@ -47,14 +53,13 @@ public class BuildBehaviour : MonoBehaviour
     {
         m_Camera = Camera.main;
         m_CameraTrans = m_Camera.gameObject.transform;
-        m_PieceQuaternion = transform.rotation;
     }
 
     private void Update()
     {
         UpdateModes();
     }
-    
+
     private void OnDrawGizmosSelected()
     {
         if (m_Camera == null)
@@ -84,29 +89,90 @@ public class BuildBehaviour : MonoBehaviour
 
     private void UpdatePreview()
     {
-        bool result = GetTypeFromParentRaycastHit(BuildManager.instance.BuildableLayer, out RaycastHit pieceRaycastHit, out PieceBehaviour piece);
-        if (m_CurrentPreview == null)
+        if (!IsPointerOverUIElement())
         {
             if (Input.GetMouseButtonDown(0))
             {
-                if (result)
+                GetOnePreview();
+                CheckCanMove();
+                CheckCanPlace();
+            }
+
+            if (Input.GetMouseButton(0))
+            {
+                Moving();
+            }
+
+            if (Input.GetMouseButtonUp(0))
+            {
+                if (m_CurrentPreview != null)
                 {
-                    if (piece != null)
-                    {
-                        m_CurrentPreview = piece;
-                        m_CurrentPreview.ChangeState(StateType.Preview);
-                    }
+                    m_MoveInitPos = m_CurrentPreview.transform.position;
+                    m_MoveMousePos = Input.mousePosition;
                 }
             }
         }
-        else
+    }
+
+    private void GetOnePreview()
+    {
+        bool result = GetTypeFromParentRaycastHit(BuildManager.instance.BuildableLayer, out RaycastHit pieceRaycastHit, out PieceBehaviour piece);
+        if (result)
+        {
+            if (m_CurrentPreview == null)
+            {
+                if (piece != null)
+                {
+                    m_CurrentPreview = piece;
+                    m_CurrentPreviewRot = m_CurrentPreview.transform.rotation;
+                    m_CurrentPreview.ChangeState(StateType.Preview);
+                }
+            }
+            else
+            {
+                if (piece != null)
+                {
+                    CheckPreviewNewOrOld(piece);
+                }
+            }
+        }
+    }
+
+    private void CheckPreviewNewOrOld(PieceBehaviour piece)
+    {
+        if (m_AllowPlacement && m_CurrentPreview != piece)
+        {
+            PlacePreview();
+            m_CurrentPreview = piece;
+            m_CurrentPreviewRot = m_CurrentPreview.transform.rotation;
+            m_CurrentPreview.ChangeState(StateType.Preview);
+        }
+    }
+
+    private void CheckCanMove()
+    {
+        if (m_CurrentPreview != null)
+        {
+            LayerMask layer = m_CurrentPreview.GetLayerMask();
+            bool moveResult = GetRaycastHit(layer, out RaycastHit hit);
+
+            if (moveResult)
+            {
+                m_CanMove = true;
+                m_MoveInitPos = hit.point;
+                m_MoveMousePos = Input.mousePosition;
+                m_MoveTargetBehaviour = hit.collider.GetComponent<MoveTargetBehaviour>();
+            }
+        }
+    }
+
+    private void CheckCanPlace()
+    {
+        if (m_CurrentPreview != null)
         {
             m_AllowPlacement = CheckPlacementConditions();
             m_CurrentPreview.gameObject.ChangeAllMaterialsColorInChildren(m_CurrentPreview.Renderers.ToArray(),
                 m_AllowPlacement ? m_CurrentPreview.PreviewAllowedColor : m_CurrentPreview.PreviewDeniedColor);
-
-            CheckPreviewNewOrOld(result, pieceRaycastHit, piece);
-            UpdatePreviewPosition();
         }
     }
 
@@ -140,105 +206,151 @@ public class BuildBehaviour : MonoBehaviour
         return result;
     }
 
-    private void CheckPreviewNewOrOld(bool resultPiece,RaycastHit pieceRaycastHit, PieceBehaviour piece)
+    private void Moving()
     {
-        if (Input.GetMouseButtonDown(0) && resultPiece && piece != null)
+        if (m_CanMove)
         {
-            if (m_AllowPlacement && m_CurrentPreview != piece)
+            CheckSameMoveTarget();
+
+            Vector3 deltaMousePos = Input.mousePosition - m_MoveMousePos;
+
+            if (m_MoveTargetBehaviour.PieceMoveType == PieceMoveType.Ground)
             {
-                PlacePreview();
-                m_CurrentPreview = piece;
-                m_CurrentPreview.ChangeState(StateType.Preview);
+                GroundMove(deltaMousePos);
+            }
+            else if (m_MoveTargetBehaviour.PieceMoveType == PieceMoveType.Wall_Forward)
+            {
+                WallForwardMove(deltaMousePos);
+            }
+            else if (m_MoveTargetBehaviour.PieceMoveType == PieceMoveType.Wall_Left)
+            {
+                WallLeftMove(deltaMousePos);
+            }
+            else if (m_MoveTargetBehaviour.PieceMoveType == PieceMoveType.Wall_Right)
+            {
+                WallRightMove(deltaMousePos);
+            }
+            
+            CheckHasFixation();
+            CheckCanPlace();
+        }
+    }
+
+    private void GroundMove(Vector3 deltaMousePos)
+    {
+        Vector3 targetPoint = transform.position;
+        targetPoint = m_MoveInitPos + new Vector3(deltaMousePos.x / m_Sensor, 0, deltaMousePos.y / m_Sensor);
+        m_CurrentPreview.transform.rotation = Quaternion.identity;
+        if (m_PreviewMovementType == MovementType.Grid)
+        {
+            targetPoint = m_MoveTargetBehaviour.PositionToGridPosition(m_PreviewGridSize, m_PreviewGridOffset, targetPoint);
+        }
+
+        m_CurrentPreview.transform.position = targetPoint;
+        m_MoveTargetBehaviour.ClampPosition(m_CurrentPreview);
+    }
+
+    private void WallForwardMove(Vector3 deltaMousePos)
+    {
+        Vector3 targetPoint = transform.position;
+        targetPoint = m_MoveInitPos + new Vector3(deltaMousePos.x / m_Sensor, deltaMousePos.y / m_Sensor, 0);
+        m_CurrentPreview.transform.rotation = Quaternion.Euler(-90f, 0, 0f);
+        if (m_PreviewMovementType == MovementType.Grid)
+        {
+            targetPoint = m_MoveTargetBehaviour.PositionToGridPosition(m_PreviewGridSize, m_PreviewGridOffset, targetPoint);
+        }
+
+        m_CurrentPreview.transform.position = targetPoint;
+        m_MoveTargetBehaviour.ClampPosition(m_CurrentPreview);
+    }
+
+    private void WallLeftMove(Vector3 deltaMousePos)
+    {
+        Vector3 targetPoint = transform.position;
+        LayerMask layer = m_CurrentPreview.GetLayerMask();
+        bool moveResult = GetRaycastHit(layer, out RaycastHit hit);
+        if (moveResult)
+        {
+            targetPoint = hit.point;
+            m_CurrentPreview.transform.rotation = Quaternion.Euler(-90f, 0f, -90f);
+            if (m_PreviewMovementType == MovementType.Grid)
+            {
+                targetPoint = m_MoveTargetBehaviour.PositionToGridPosition(m_PreviewGridSize, m_PreviewGridOffset, targetPoint);
+            }
+
+            m_CurrentPreview.transform.position = targetPoint;
+            m_MoveTargetBehaviour.ClampPosition(m_CurrentPreview);
+
+            m_MoveInitPos = hit.point;
+            m_MoveMousePos = Input.mousePosition;
+        }
+        else
+        {
+            targetPoint = m_MoveInitPos + new Vector3(0, -deltaMousePos.x / m_Sensor, deltaMousePos.y / m_Sensor);
+            if (m_PreviewMovementType == MovementType.Grid)
+            {
+                targetPoint = m_MoveTargetBehaviour.PositionToGridPosition(m_PreviewGridSize, m_PreviewGridOffset, targetPoint);
+            }
+            m_CurrentPreview.transform.position = targetPoint;
+            m_MoveTargetBehaviour.ClampPosition(m_CurrentPreview);
+        }
+    }
+
+    private void WallRightMove(Vector3 deltaMousePos)
+    {
+        Vector3 targetPoint = transform.position;
+        LayerMask layer = m_CurrentPreview.GetLayerMask();
+        bool moveResult = GetRaycastHit(layer, out RaycastHit hit);
+        if (moveResult)
+        {
+            targetPoint = hit.point;
+            m_CurrentPreview.transform.rotation = Quaternion.Euler(-90f, 180f, -90f);
+            if (m_PreviewMovementType == MovementType.Grid)
+            {
+                targetPoint = m_MoveTargetBehaviour.PositionToGridPosition(m_PreviewGridSize, m_PreviewGridOffset, targetPoint);
+            }
+
+            m_CurrentPreview.transform.position = targetPoint;
+            m_MoveTargetBehaviour.ClampPosition(m_CurrentPreview);
+            
+            m_MoveInitPos = hit.point;
+            m_MoveMousePos = Input.mousePosition;
+        }
+        else
+        {
+            targetPoint = m_MoveInitPos + new Vector3(0, deltaMousePos.x / m_Sensor, deltaMousePos.y / m_Sensor);
+            if (m_PreviewMovementType == MovementType.Grid)
+            {
+                targetPoint = m_MoveTargetBehaviour.PositionToGridPosition(m_PreviewGridSize, m_PreviewGridOffset, targetPoint);
+            }
+            m_CurrentPreview.transform.position = targetPoint;
+            m_MoveTargetBehaviour.ClampPosition(m_CurrentPreview);
+        }
+    }
+
+    private void CheckSameMoveTarget()
+    {
+        LayerMask newLayer = m_CurrentPreview.GetLayerMask();
+        bool newResult = GetRaycastHit(newLayer, out RaycastHit newHit);
+
+        if (newResult)
+        {
+            MoveTargetBehaviour temp = newHit.collider.GetComponent<MoveTargetBehaviour>();
+            if (temp != m_MoveTargetBehaviour)
+            {
+                CheckCanMove();
             }
         }
     }
 
-    private void UpdatePreviewPosition()
+    private void CheckHasFixation()
     {
-        if (Input.GetMouseButton(0) && !IsPointerOverUIElement())
+        bool fixationResult = GetTypeFromParentRaycastHit(BuildManager.instance.FixationLayer, out RaycastHit fixationRaycastHit, out FixationBehaviour fixation);
+
+        if (m_FixationBehaviour != fixation)
         {
-            LayerMask layer = 0;
-            if (m_CurrentPreview.PieceMoveType == PieceMoveType.Ground)
-            {
-                layer = BuildManager.instance.GroundLayer;
-            }
-            else if (m_CurrentPreview.PieceMoveType == PieceMoveType.Wall)
-            {
-                layer = BuildManager.instance.WallLayer;
-            }
-            
-            bool result = GetRaycastHit(layer, out RaycastHit hit);
-            bool fixationResult = GetTypeFromParentRaycastHit(BuildManager.instance.FixationLayer, out RaycastHit fixationRaycastHit, out FixationBehaviour fixation);
-            
-            if (result)
-            {
-                Vector3 targetPoint = hit.point;
-
-                if (m_PreviewMovementType == MovementType.Grid)
-                    targetPoint = MathExtension.PositionToGridPosition(m_PreviewGridSize, m_PreviewGridOffset, targetPoint);
-                
-                // if (m_PreviewMovementOnlyAllowed)
-                // {
-                //     m_CurrentPreview.transform.position = targetPoint;
-                //
-                //     if (m_CurrentPreview.CheckExternalPlacementConditions() && CheckPlacementConditions())
-                //     {
-                //         m_LastAllowedPoint = m_CurrentPreview.transform.position;
-                //     }
-                //     else
-                //     {
-                //         m_CurrentPreview.transform.rotation = Quaternion.FromToRotation(m_CameraTrans.up, hit.normal) * m_CameraTrans.rotation * m_PieceQuaternion;
-                //         m_CurrentPreview.transform.position = m_LastAllowedPoint;
-                //     }
-                // }
-                // else
-                // {
-                //     m_CurrentPreview.transform.rotation = Quaternion.FromToRotation(m_CameraTrans.up, hit.normal) * m_CameraTrans.rotation * m_PieceQuaternion;
-                //     m_CurrentPreview.transform.position = targetPoint;
-                // }
-
-                if (m_CurrentPreview.PieceMoveType == PieceMoveType.Ground)
-                {
-                    targetPoint += m_CurrentPreview.PreviewOffset * hit.normal;
-                }
-                
-                m_CurrentPreview.transform.rotation = Quaternion.FromToRotation(m_CameraTrans.up, hit.normal) * m_CameraTrans.rotation * m_PieceQuaternion;
-                m_CurrentPreview.transform.position = targetPoint;
-
-                if (fixationResult && fixation != null)
-                {
-                    if (m_FixationBehaviour != fixation)
-                    {
-                        m_FixationBehaviour = fixation;
-                        m_FixationQuaternion = fixation.transform.rotation;
-                    }
-
-                    Vector3 fixationPoint = fixation.transform.position;
-
-                    if (m_CurrentPreview.PieceMoveType == PieceMoveType.Ground)
-                    {
-                        fixationPoint += m_CurrentPreview.PreviewOffset * hit.normal;
-                    }
-
-                    m_CurrentPreview.transform.position = fixationPoint;
-                    m_CurrentPreview.transform.rotation = m_FixationQuaternion;
-                }
-                else
-                {
-                    m_FixationBehaviour = null;
-                }
-                
-                m_LastPoint = new Vector3(0, 1000f, 0);
-            }
-            else
-            {
-                if (m_LastPoint == new Vector3(0, 1000f, 0))
-                {
-                    m_LastPoint = m_CurrentPreview.transform.position;
-                }
-
-                m_CurrentPreview.transform.position = m_LastPoint;
-            }
+            m_CurrentPreview.SetFixationBehaviour(fixation);
+            m_FixationBehaviour = fixation;
         }
     }
 
@@ -312,19 +424,15 @@ public class BuildBehaviour : MonoBehaviour
             m_IsNew = true;
 
             m_CurrentPreview = Instantiate(prefab).GetComponent<PieceBehaviour>();
-            //m_CurrentPreview.transform.eulerAngles = Vector3.zero;
-            //m_CurrentPreview.transform.position += m_CurrentPreview.PreviewOffset * Vector3.up;
-            m_AllowPlacement = CheckPlacementConditions();
-
             m_CurrentPreview.ChangeState(StateType.Preview);
-
-            //Debug.LogError("CreatePreview : " + m_CurrentPreview.name);
+            CheckCanPlace();
         }
     }
-    
+
     public void PlacePreview()
     {
         m_CurrentPreview.ChangeState(StateType.Placed);
+        m_CanMove = false;
         m_CurrentPreview = null;
         m_AllowPlacement = false;
         m_IsNew = false;
@@ -334,24 +442,15 @@ public class BuildBehaviour : MonoBehaviour
     {
         m_CurrentPreview.ResetPosRot();
     }
-    
-    public void RotatePreview(Vector3 rotateAxis)
+
+    public void RotatePreview()
     {
         if (m_CurrentPreview == null)
         {
             return;
         }
 
-        m_CurrentPreview.transform.Rotate(m_CurrentPreview.transform.up, 90, Space.World);
-        if (m_FixationBehaviour == null)
-        {
-            m_PieceQuaternion = m_CurrentPreview.transform.rotation;
-        }
-        else
-        {
-            m_FixationQuaternion = m_CurrentPreview.transform.rotation;
-        }
-     
+        m_CurrentPreview.RotateModel();
     }
 
     /// <summary>

@@ -15,10 +15,10 @@ TagManager:
   - 
   - 
   - Ground
+  - Wall_Forward
+  - Wall_Left
+  - Wall_Right
   - Fixation
-  - Wall
-  - 
-  - 
   - 
   - 
   - 

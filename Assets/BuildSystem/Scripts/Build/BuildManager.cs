@@ -6,18 +6,25 @@ public class BuildManager : MonoBehaviour
     public static BuildManager instance;
 
     [SerializeField] private LayerMask m_BuildableLayer = 1 << 0;
+    
     [SerializeField] private LayerMask m_GroundLayer;
-    [SerializeField] private LayerMask m_WallLayer;
+    [SerializeField] private LayerMask m_WallForwardLayer;
+    [SerializeField] private LayerMask m_WallLeftLayer;
+    [SerializeField] private LayerMask m_WallRightLayer;
+    
     [SerializeField] private LayerMask m_FixationLayer;
     
-    [SerializeField] private SupportType m_BuildableSurfaces = SupportType.SurfaceCollider;
     [SerializeField] private StateType DefaultState = StateType.Placed;
     [SerializeField] private List<PieceBehaviour> m_Pieces = new List<PieceBehaviour>();
     [SerializeField] private List<PieceBehaviour> m_CachedParts = new List<PieceBehaviour>();
 
     public LayerMask BuildableLayer => m_BuildableLayer;
+    
     public LayerMask GroundLayer => m_GroundLayer;
-    public LayerMask WallLayer => m_WallLayer;
+    public LayerMask WallForwardLayer => m_WallForwardLayer;
+    public LayerMask WallLeftLayer => m_WallLeftLayer;
+    public LayerMask WallRightLayer => m_WallRightLayer;
+    
     public LayerMask FixationLayer => m_FixationLayer;
     
     public List<PieceBehaviour> CachedParts => m_CachedParts;
@@ -84,26 +91,4 @@ public class BuildManager : MonoBehaviour
 
         return placedPart;
     }
-
-    /// <summary>
-    /// This method allows to check if the collider is a buildable surface.
-    /// </summary>
-    public bool IsBuildableSurface(Collider collider)
-    {
-        if (m_BuildableSurfaces == SupportType.AnyCollider)
-        {
-            return true;
-        }
-        else if (m_BuildableSurfaces == SupportType.TerrainCollider)
-        {
-            return collider.GetComponent<TerrainCollider>();
-        }
-        else if (m_BuildableSurfaces == SupportType.SurfaceCollider)
-        {
-            return collider.GetComponent<SurfaceCollider>();
-        }
-
-        return false;
-    }
-
 }

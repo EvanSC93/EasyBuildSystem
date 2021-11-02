@@ -33,9 +33,10 @@ public class ExternalCollisionCondition : ConditionBehaviour
 
         for (int i = 0; i < colliders.Length; i++)
         {
-            if (colliders[i] != null)
+            Collider temp = colliders[i];
+            if (temp != null)
             {
-                if (colliders[i].GetComponentInParent<PieceBehaviour>() != null)
+                if (temp.GetComponentInParent<PieceBehaviour>() != null)
                 {
                     canBePlaced = false;
                     break;

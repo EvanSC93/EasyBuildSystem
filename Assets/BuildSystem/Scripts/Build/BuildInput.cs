@@ -36,7 +36,7 @@ public class BuildInput : MonoBehaviour
         {
             return;
         }
-        BuildBehaviour.instance.RotatePreview(new Vector3(0, 90, 0));
+        BuildBehaviour.instance.RotatePreview();
     }
 
     public void New(int index)
