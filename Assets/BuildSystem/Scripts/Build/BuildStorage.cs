@@ -12,16 +12,11 @@ public class BuildStorage : MonoBehaviour
     [SerializeField] private bool m_LoadAndWaitEndFrame;
     [SerializeField] private bool m_SavePrefabs = true;
     [SerializeField] private bool m_LoadPrefabs = true;
-
     [SerializeField] private float m_AutoSaveInterval = 60f;
-    
     [SerializeField] private string m_StorageOutputFile;
-
-    private bool LoadedFile = false;
+    
     private bool m_FileIsCorrupted;
-    
-    private float TimerAutoSave;
-    
+    private float m_TimerAutoSave;
     private List<PieceBehaviour> m_PrefabsLoaded = new List<PieceBehaviour>();
     
     #region Methods
@@ -40,7 +35,7 @@ public class BuildStorage : MonoBehaviour
 
         if (m_AutoSave)
         {
-            TimerAutoSave = m_AutoSaveInterval;
+            m_TimerAutoSave = m_AutoSaveInterval;
         }
     }
 
@@ -48,19 +43,14 @@ public class BuildStorage : MonoBehaviour
     {
         if (m_AutoSave)
         {
-            if (TimerAutoSave <= 0)
+            if (m_TimerAutoSave <= 0)
             {
-                //Debug.LogError("<b>Easy Build System</b> : Saving of " + FindObjectsOfType<PieceBehaviour>().Length + " Part(s) ...");
-
                 SaveStorageFile();
-
-                //Debug.LogError("<b>Easy Build System</b> : Saved with successfuly !");
-
-                TimerAutoSave = m_AutoSaveInterval;
+                m_TimerAutoSave = m_AutoSaveInterval;
             }
             else
             {
-                TimerAutoSave -= Time.deltaTime;
+                m_TimerAutoSave -= Time.deltaTime;
             }
         }
     }
@@ -110,87 +100,80 @@ public class BuildStorage : MonoBehaviour
     /// </summary>
     public void LoadInEditor(string path)
     {
-        int PrefabLoaded = 0;
+        int prefabLoaded = 0;
 
         m_PrefabsLoaded = new List<PieceBehaviour>();
 
-        BuildManager Manager = FindObjectOfType<BuildManager>();
+        BuildManager manager = FindObjectOfType<BuildManager>();
 
-        if (Manager == null)
+        if (manager == null)
         {
             Debug.LogError("<b>Easy Build System</b> : The BuildManager is not in the scene, please add it to load a file.");
 
             return;
         }
 
-        FileStream Stream = File.Open(path, FileMode.Open);
+        FileStream stream = File.Open(path, FileMode.Open);
 
-        PieceData Serializer = null;
+        PieceData serializer = null;
 
         try
         {
-            using (StreamReader Reader = new StreamReader(Stream))
+            using (StreamReader reader = new StreamReader(stream))
             {
-                Serializer = JsonUtility.FromJson<PieceData>(Reader.ReadToEnd());
+                serializer = JsonUtility.FromJson<PieceData>(reader.ReadToEnd());
             }
         }
         catch
         {
-            Stream.Close();
+            stream.Close();
 
             Debug.LogError("<b>Easy Build System</b> : Please check that the file extension to load is correct.");
 
             return;
         }
 
-        if (Serializer == null || Serializer.Pieces == null)
+        if (serializer == null || serializer.Pieces == null)
         {
             Debug.LogError("<b>Easy Build System</b> : The file is empty or the data are corrupted.");
 
             return;
         }
 
-        for (int i = 0; i < Serializer.Pieces.Count; i++)
+        for (int i = 0; i < serializer.Pieces.Count; i++)
         {
-            if (Serializer.Pieces[i] != null)
+            if (serializer.Pieces[i] != null)
             {
-                PieceBehaviour Prefab = Manager.GetPieceById(Serializer.Pieces[i].Id);
+                PieceBehaviour prefab = manager.GetPieceById(serializer.Pieces[i].Id);
 
-                if (Prefab != null)
+                if (prefab != null)
                 {
-                    PieceBehaviour PlacedPrefab = Manager.PlacePrefab(Prefab,
-                        PieceData.ParseToVector3(Serializer.Pieces[i].Position),
-                        PieceData.ParseToVector3(Serializer.Pieces[i].Rotation),
-                        PieceData.ParseToVector3(Serializer.Pieces[i].Scale));
+                    PieceBehaviour placedPrefab = manager.PlacePrefab(prefab,
+                        PieceData.ParseToVector3(serializer.Pieces[i].Position),
+                        PieceData.ParseToVector3(serializer.Pieces[i].Rotation),
+                        PieceData.ParseToVector3(serializer.Pieces[i].Scale));
 
-                    PlacedPrefab.transform.position = PieceData.ParseToVector3(Serializer.Pieces[i].Position);
-                    PlacedPrefab.transform.eulerAngles = PieceData.ParseToVector3(Serializer.Pieces[i].Rotation);
-                    PlacedPrefab.transform.localScale = PieceData.ParseToVector3(Serializer.Pieces[i].Scale);
+                    placedPrefab.transform.position = PieceData.ParseToVector3(serializer.Pieces[i].Position);
+                    placedPrefab.transform.eulerAngles = PieceData.ParseToVector3(serializer.Pieces[i].Rotation);
+                    placedPrefab.transform.localScale = PieceData.ParseToVector3(serializer.Pieces[i].Scale);
+                    placedPrefab.Model.transform.rotation = Quaternion.Euler(PieceData.ParseToVector3(serializer.Pieces[i].ModelRotation));
+                    
+                    m_PrefabsLoaded.Add(placedPrefab);
 
-                    m_PrefabsLoaded.Add(PlacedPrefab);
-
-                    PrefabLoaded++;
+                    prefabLoaded++;
                 }
                 else
                 {
-                    Debug.LogError("<b>Easy Build System</b> : The Prefab (" + Serializer.Pieces[i].Id + ") does not exists in the Build Manager.");
+                    Debug.LogError("<b>Easy Build System</b> : The Prefab (" + serializer.Pieces[i].Id + ") does not exists in the Build Manager.");
                 }
             }
         }
 
-        Stream.Close();
+        stream.Close();
 
-        Debug.LogError("<b>Easy Build System</b> : Data file loaded " + PrefabLoaded + " Prefab(s) loaded in " + Time.realtimeSinceStartup.ToString("#.##") + " ms in the Editor scene.");
+        Debug.LogError("<b>Easy Build System</b> : Data file loaded " + prefabLoaded + " Prefab(s) loaded in " + Time.realtimeSinceStartup.ToString("#.##") + " ms in the Editor scene.");
 
         m_PrefabsLoaded.Clear();
-    }
-
-    /// <summary>
-    /// This method allows to load the storage file.
-    /// </summary>
-    public void LoadStorageFile()
-    {
-        StartCoroutine(LoadDataFile());
     }
 
     /// <summary>
@@ -199,14 +182,6 @@ public class BuildStorage : MonoBehaviour
     public void SaveStorageFile()
     {
         StartCoroutine(SaveDataFile());
-    }
-
-    /// <summary>
-    /// This method allows to delete the storage file.
-    /// </summary>
-    public void DeleteStorageFile()
-    {
-        StartCoroutine(DeleteDataFile());
     }
 
     /// <summary>
@@ -236,22 +211,22 @@ public class BuildStorage : MonoBehaviour
         {
             //Debug.LogError("<b>Easy Build System</b> : Loading data file ...");
 
-            FileStream Stream = null;
+            FileStream stream = null;
 
-            Stream = File.Open(GetOutPutPath(), FileMode.Open);
+            stream = File.Open(GetOutPutPath(), FileMode.Open);
 
             PieceData serializer = null;
 
             try
             {
-                using (StreamReader Reader = new StreamReader(Stream))
+                using (StreamReader reader = new StreamReader(stream))
                 {
-                    serializer = JsonUtility.FromJson<PieceData>(Reader.ReadToEnd());
+                    serializer = JsonUtility.FromJson<PieceData>(reader.ReadToEnd());
                 }
             }
             catch (Exception ex)
             {
-                Stream.Close();
+                stream.Close();
 
                 m_FileIsCorrupted = true;
 
@@ -284,7 +259,8 @@ public class BuildStorage : MonoBehaviour
                         placedPiece.transform.position = PieceData.ParseToVector3(serializer.Pieces[i].Position);
                         placedPiece.transform.eulerAngles = PieceData.ParseToVector3(serializer.Pieces[i].Rotation);
                         placedPiece.transform.localScale = PieceData.ParseToVector3(serializer.Pieces[i].Scale);
-
+                        placedPiece.Model.transform.rotation = Quaternion.Euler(PieceData.ParseToVector3(serializer.Pieces[i].ModelRotation));
+                        
                         m_PrefabsLoaded.Add(placedPiece);
 
                         prefabLoaded++;
@@ -301,33 +277,18 @@ public class BuildStorage : MonoBehaviour
                 }
             }
 
-            if (Stream != null)
+            if (stream != null)
             {
-                Stream.Close();
+                stream.Close();
             }
-
-            if (!m_LoadAndWaitEndFrame)
-            {
-                //Debug.LogError("<b>Easy Build System</b> : Data file loaded " + PrefabLoaded + " prefab(s) loaded in " + Time.realtimeSinceStartup.ToString("#.##") + " ms.");
-            }
-            else
-            {
-                //Debug.LogError("<b>Easy Build System</b> : Data file loaded " + PrefabLoaded + " prefab(s).");
-            }
-
-            LoadedFile = true;
 
             BuildEvent.instance.OnStorageLoadingResult.Invoke(m_PrefabsLoaded.ToArray());
-
-            yield break;
         }
         else
         {
             //Debug.LogError("<b>Easy Build System</b> : No file");
             BuildEvent.instance.OnStorageLoadingResult.Invoke(null);
         }
-
-        yield break;
     }
 
     private IEnumerator SaveDataFile()
@@ -346,7 +307,7 @@ public class BuildStorage : MonoBehaviour
             yield break;
         }
 
-        int SavedCount = 0;
+        int savedCount = 0;
 
         if (ExistsStorageFile())
         {
@@ -361,79 +322,49 @@ public class BuildStorage : MonoBehaviour
         {
             //Debug.LogError("<b>Easy Build System</b> : Saving data file ...");
 
-            FileStream Stream = null;
+            FileStream stream = null;
 
-            Stream = File.Create(GetOutPutPath());
+            stream = File.Create(GetOutPutPath());
 
-            PieceData Data = new PieceData();
+            PieceData data = new PieceData();
 
-            PieceBehaviour[] PartsAtSave = BuildManager.instance.CachedParts.ToArray();
+            PieceBehaviour[] partsAtSave = BuildManager.instance.CachedParts.ToArray();
 
-            for (int i = 0; i < PartsAtSave.Length; i++)
+            for (int i = 0; i < partsAtSave.Length; i++)
             {
-                if (PartsAtSave[i] != null)
+                if (partsAtSave[i] != null)
                 {
-                    if (PartsAtSave[i].CurrentState == StateType.Placed)
+                    if (partsAtSave[i].CurrentState == StateType.Placed)
                     {
-                        PieceData.SerializedPiece DataTemp = new PieceData.SerializedPiece
+                        PieceData.SerializedPiece dataTemp = new PieceData.SerializedPiece
                         {
-                            Id = PartsAtSave[i].ID,
-                            Name = PartsAtSave[i].name,
-                            Position = PieceData.ParseToSerializedVector3(PartsAtSave[i].transform.position),
-                            Rotation = PieceData.ParseToSerializedVector3(PartsAtSave[i].transform.eulerAngles),
-                            Scale = PieceData.ParseToSerializedVector3(PartsAtSave[i].transform.localScale),
+                            Id = partsAtSave[i].ID,
+                            Name = partsAtSave[i].name,
+                            Position = PieceData.ParseToSerializedVector3(partsAtSave[i].transform.position),
+                            Rotation = PieceData.ParseToSerializedVector3(partsAtSave[i].transform.eulerAngles),
+                            ModelRotation = PieceData.ParseToSerializedVector3(partsAtSave[i].Model.transform.eulerAngles),
+                            Scale = PieceData.ParseToSerializedVector3(partsAtSave[i].transform.localScale),
                         };
 
-                        Data.Pieces.Add(DataTemp);
+                        data.Pieces.Add(dataTemp);
 
-                        SavedCount++;
+                        savedCount++;
                     }
                 }
             }
 
-            using (StreamWriter Writer = new StreamWriter(Stream))
+            using (StreamWriter writer = new StreamWriter(stream))
             {
-                Writer.Write(JsonUtility.ToJson(Data));
+                writer.Write(JsonUtility.ToJson(data));
             }
 
-            Stream.Close();
+            stream.Close();
 
             //Debug.LogError("<b>Easy Build System</b> : Data file saved " + SavedCount + " Prefab(s).");
 
             if (BuildEvent.instance != null)
             {
                 BuildEvent.instance.OnStorageSavingResult.Invoke(m_PrefabsLoaded.ToArray());
-            }
-
-            yield break;
-        }
-    }
-
-    private IEnumerator DeleteDataFile()
-    {
-        if (GetOutPutPath() == string.Empty || Directory.Exists(GetOutPutPath()))
-        {
-            Debug.LogError("<b>Easy Build System</b> : Please define out file path.");
-
-            yield break;
-        }
-
-        if (File.Exists(GetOutPutPath()) == true)
-        {
-            for (int i = 0; i < m_PrefabsLoaded.Count; i++)
-            {
-                Destroy(m_PrefabsLoaded[i].gameObject);
-            }
-
-            File.Delete(GetOutPutPath());
-
-            Debug.LogError("<b>Easy Build System</b> : The storage file has been removed.");
-        }
-        else
-        {
-            if (BuildEvent.instance != null)
-            {
-                BuildEvent.instance.OnStorageSavingResult.Invoke(null);
             }
         }
     }

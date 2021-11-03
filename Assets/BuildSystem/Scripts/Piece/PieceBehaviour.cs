@@ -48,7 +48,8 @@ public class PieceBehaviour : MonoBehaviour
     public Bounds MeshBoundsToWorld => transform.ConvertBoundsToWorld(m_MeshBounds);
     public int ID => m_ID;
     public StateType CurrentState => m_CurrentState;
-
+    public GameObject Model => m_Model;
+    
     private void Awake()
     {
         m_Conditions = GetComponent<ConditionBehaviour>();
@@ -136,7 +137,7 @@ public class PieceBehaviour : MonoBehaviour
 
     private void UpdateName()
     {
-        gameObject.name = m_ModelName + BuildManager.instance.CachedParts.Count;
+        gameObject.name = m_ModelName + "_" + BuildManager.instance.CachedParts.Count;
     }
 
     /// <summary>

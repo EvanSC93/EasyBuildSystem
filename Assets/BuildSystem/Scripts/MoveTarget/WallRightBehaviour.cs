@@ -4,18 +4,6 @@ using UnityEngine;
 
 public class WallRightBehaviour : MoveTargetBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-    
     protected override void SetLayerMask()
     {
         m_PieceMoveType = PieceMoveType.Wall_Right;

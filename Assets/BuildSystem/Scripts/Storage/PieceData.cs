@@ -17,6 +17,7 @@ using UnityEngine;
             [SerializeField] public string Name;
             [SerializeField] public SerializeVector3 Position;
             [SerializeField] public SerializeVector3 Rotation;
+            [SerializeField] public SerializeVector3 ModelRotation;
             [SerializeField] public SerializeVector3 Scale;
         }
 
